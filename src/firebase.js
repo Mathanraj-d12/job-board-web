@@ -9,7 +9,7 @@ import {
   fetchSignInMethodsForEmail
 } from 'firebase/auth';
 import { getFirestore, collection, addDoc, doc, getDoc, query, where, updateDoc, getDocs, setDoc } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -98,6 +98,7 @@ const logoutUser = async () => {
 
 /**
  * Send notification to job owner about new application
+ * This version uses the Cloud Function that works on the free plan
  * @param {string} ownerId - ID of the job owner
  * @param {object} applicationData - Application data
  * @returns {Promise<{success: boolean, notificationId?: string, error?: string}>} Result object
@@ -108,6 +109,29 @@ const sendNotificationToOwner = async (ownerId, applicationData) => {
       return { success: false, error: 'Owner ID is required' };
     }
 
+    // First try to use the Cloud Function if available
+    try {
+      const storeApplication = httpsCallable(functions, 'storeApplication');
+      const result = await storeApplication({
+        applicationData: {
+          ...applicationData,
+          jobOwnerId: ownerId
+        }
+      });
+
+      if (result.data && result.data.success) {
+        return {
+          success: true,
+          applicationId: result.data.applicationId,
+          message: result.data.message || 'Application submitted successfully!'
+        };
+      }
+    } catch (functionError) {
+      console.log('Cloud function not available, falling back to direct Firestore:', functionError);
+      // If the function fails, fall back to direct Firestore method
+    }
+
+    // Fallback: Add notification directly to Firestore
     const notificationRef = collection(db, 'notifications');
     const notificationData = {
       recipientId: ownerId,
@@ -126,14 +150,12 @@ const sendNotificationToOwner = async (ownerId, applicationData) => {
     // Add notification to Firestore
     const docRef = await addDoc(notificationRef, notificationData);
 
-    // Return success with notification ID instead of showing alert
+    // Return success with notification ID
     return {
       success: true,
       notificationId: docRef.id,
       message: 'Application submitted successfully! The employer will be notified in their dashboard.'
     };
-
-    // Email functionality has been completely removed
   } catch (error) {
     console.error('Error sending notification:', error);
     return {
