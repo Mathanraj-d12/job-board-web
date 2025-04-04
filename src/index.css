@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  position: relative;
+  background: #f8fafc;
+  overflow-x: hidden;
+  color: #333;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.glass-container {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.navbar {
+  @apply fixed top-0 left-0 right-0 z-50;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.job-card {
+  @apply bg-white rounded-lg p-6 transition-all duration-300;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.job-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.category-card {
+  @apply bg-white/90 backdrop-blur-sm rounded-xl p-6 transition-all duration-300;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.category-card:hover {
+  @apply bg-white/95;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.footer {
+  @apply mt-auto py-8;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-link {
+  @apply text-white/80 hover:text-white transition-colors duration-200;
+  text-decoration: none;
+}
