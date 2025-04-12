@@ -8,6 +8,7 @@ import { Container, CssBaseline } from '@mui/material';
 import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import ForgotPassword from './pages/ForgotPassword';
 import JobList from './pages/JobList';
 
 import EditJob from './pages/EditJob';
@@ -260,6 +261,10 @@ function App() {
             <Route
               path="/signup"
               element={!user ? <SignUp /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/forgot-password"
+              element={!user ? <ForgotPassword /> : <Navigate to="/" />}
             />
             <Route path="/jobs" element={<JobList />} />
             <Route path="/edit-job/:jobId" element={<EditJob />} />

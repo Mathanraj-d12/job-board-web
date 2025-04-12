@@ -75,11 +75,15 @@ function Apply() {
         }
       }
 
+      // Make sure we have the correct job title
+      const jobTitle = job.title || 'Untitled Job';
+      console.log("Applying for job:", jobTitle);
+
       const applicationPayload = {
         jobId: applicationId ? job.id : jobId,
         userId: auth.currentUser.uid,
         jobPosterEmail,
-        jobTitle: job.title || 'Untitled Job',
+        jobTitle: jobTitle, // Use the extracted job title
         ...formData,
         appliedAt: new Date().toISOString(),
         status: "pending",
@@ -180,7 +184,10 @@ function Apply() {
               onClose={() => navigate("/jobs")}
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
-              initialData={applicationData}
+              initialData={{
+                ...applicationData,
+                jobTitle: job?.title || 'Untitled Job'
+              }}
               applicationStatus={applicationStatus}
               jobOwnerId={job?.userId}
               setApplicationStatus={setApplicationStatus}

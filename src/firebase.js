@@ -6,10 +6,10 @@ import {
   signInWithPopup,
   createUserWithEmailAndPassword,
   signOut,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
+  sendEmailVerification
 } from 'firebase/auth';
 import { getFirestore, collection, addDoc, doc, getDoc, query, where, updateDoc, getDocs, setDoc } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -27,7 +27,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const functions = getFunctions(app);
 
 /**
  * Request browser notification permission
@@ -109,38 +108,20 @@ const sendNotificationToOwner = async (ownerId, applicationData) => {
       return { success: false, error: 'Owner ID is required' };
     }
 
-    // First try to use the Cloud Function if available
-    try {
-      const storeApplication = httpsCallable(functions, 'storeApplication');
-      const result = await storeApplication({
-        applicationData: {
-          ...applicationData,
-          jobOwnerId: ownerId
-        }
-      });
-
-      if (result.data && result.data.success) {
-        return {
-          success: true,
-          applicationId: result.data.applicationId,
-          message: result.data.message || 'Application submitted successfully!'
-        };
-      }
-    } catch (functionError) {
-      console.log('Cloud function not available, falling back to direct Firestore:', functionError);
-      // If the function fails, fall back to direct Firestore method
-    }
+    
 
     // Fallback: Add notification directly to Firestore
     const notificationRef = collection(db, 'notifications');
     const notificationData = {
       recipientId: ownerId,
-      message: `New job application received for ${applicationData.jobTitle} from ${applicationData.fullName}`,
+      message: `New job application received from ${applicationData.fullName}`,
       createdAt: new Date().toISOString(),
       read: false,
       type: 'application',
       applicationId: applicationData.applicationId,
       jobId: applicationData.jobId,
+      // Include job title as a separate field for better display
+      jobTitle: applicationData.jobTitle || 'Untitled Job',
       // Only include the resume link and basic info, removing detailed applicant information
       fullName: applicationData.fullName,
       resumeLink: applicationData.resumeLink || '',
@@ -217,10 +198,17 @@ const fetchApplicationDetails = async (applicationId) => {
  */
 const checkIfUserExists = async (email) => {
   try {
+    if (!email || typeof email !== 'string') {
+      console.error('Invalid email provided to checkIfUserExists:', email);
+      return false;
+    }
+
     const methods = await fetchSignInMethodsForEmail(auth, email);
+    console.log(`Sign-in methods for ${email}:`, methods);
     return methods.length > 0;
   } catch (error) {
     console.error('Error checking if user exists:', error);
+    // Don't throw the error, just return false
     return false;
   }
 };
@@ -286,6 +274,27 @@ const createUserProfile = async (user, additionalData = {}) => {
   }
 };
 
+/**
+ * Send email verification to the current user
+ * @param {object} user - Firebase user object
+ * @returns {Promise<boolean>} Success status
+ */
+const sendVerificationEmail = async (user) => {
+  try {
+    if (!user) {
+      console.error('sendVerificationEmail called without user object');
+      return false;
+    }
+
+    await sendEmailVerification(user);
+    console.log('Verification email sent to:', user.email);
+    return true;
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    return false;
+  }
+};
+
 // Export Firebase services for use in other components
 export {
   auth,
@@ -297,7 +306,7 @@ export {
   fetchApplicationDetails,
   checkIfUserExists,
   createUserProfile,
+  sendVerificationEmail,
   db,
-  functions,
   createUserWithEmailAndPassword
 };

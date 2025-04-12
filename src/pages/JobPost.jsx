@@ -11,7 +11,22 @@ import {
   Grid,
   Alert,
   MenuItem,
+  Paper,
+  Divider,
+  InputAdornment,
+  Stepper,
+  Step,
+  StepLabel,
+  Card,
+  CardContent,
+  Chip,
 } from '@mui/material';
+import WorkIcon from '@mui/icons-material/Work';
+import BusinessIcon from '@mui/icons-material/Business';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CategoryIcon from '@mui/icons-material/Category';
 
 function JobPost() {
   const navigate = useNavigate();
@@ -50,7 +65,7 @@ function JobPost() {
         break;
       case 'salary':
         if (!/^\$?\d+([kK])?(-\$?\d+([kK])?)?$/.test(value))
-          error = 'Enter a valid salary range (e.g. 50k-80k or $50000-$80000)';
+          error = 'Enter a valid salary range (e.g. 50k-80k or $50000-$80000) - per month';
         break;
       case 'description':
         if (value.length < 50 || value.length > 5000)
@@ -105,6 +120,7 @@ function JobPost() {
       const jobData = {
         ...formData,
         userId: auth.currentUser.uid,
+        userEmail: auth.currentUser.email,
         postedAt: new Date().toISOString(),
       };
 
@@ -118,18 +134,72 @@ function JobPost() {
   };
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Post a New Job
-        </Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+    <Container maxWidth="md" sx={{ py: 5 }}>
+      <Paper
+        elevation={3}
+        sx={{
+          borderRadius: 3,
+          overflow: 'hidden',
+          mb: 4
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: 'primary.main',
+            color: 'white',
+            py: 3,
+            px: 4,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}
+        >
+          <WorkIcon sx={{ fontSize: 36 }} />
+          <Box>
+            <Typography variant="h4" fontWeight={700}>
+              Post a New Job
+            </Typography>
+            <Typography variant="subtitle1" sx={{ opacity: 0.9, mt: 0.5 }}>
+              Fill in the details below to create your job listing
+            </Typography>
+          </Box>
+        </Box>
 
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            {/* Job Type Dropdown */}
+        <Box sx={{ p: 4 }}>
+          {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
+
+          <Card variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" color="primary.main" fontWeight={600} gutterBottom>
+                Tips for a Great Job Posting
+              </Typography>
+              <Typography variant="body2" paragraph>
+                • Be specific about responsibilities and requirements
+              </Typography>
+              <Typography variant="body2" paragraph>
+                • Include salary information to attract more qualified candidates
+              </Typography>
+              <Typography variant="body2" paragraph>
+                • Describe your company culture and benefits
+              </Typography>
+              <Typography variant="body2">
+                • Proofread your listing before submitting
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
             <Grid item xs={12}>
+              <Typography variant="subtitle1" fontWeight={600} color="primary" gutterBottom>
+                Job Classification
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            {/* Job Type Dropdown */}
+            <Grid item xs={12} md={6}>
               <TextField
                 required
                 fullWidth
@@ -140,17 +210,88 @@ function JobPost() {
                 onChange={handleChange}
                 error={!!formErrors.jobType}
                 helperText={formErrors.jobType}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <WorkIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               >
                 <MenuItem value="">Select a job type</MenuItem>
-                <MenuItem value="full-time">Full-time</MenuItem>
-                <MenuItem value="part-time">Part-time</MenuItem>
-                <MenuItem value="contract">Contract</MenuItem>
-                <MenuItem value="internship">Internship</MenuItem>
+                <MenuItem value="full-time">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Chip
+                      label="Full-time"
+                      size="small"
+                      sx={{
+                        bgcolor: '#e3f2fd',
+                        color: '#1976d2',
+                        fontWeight: 600,
+                        mr: 1
+                      }}
+                    />
+                    <Typography variant="body2">40+ hours per week</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="part-time">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Chip
+                      label="Part-time"
+                      size="small"
+                      sx={{
+                        bgcolor: '#e8f5e9',
+                        color: '#2e7d32',
+                        fontWeight: 600,
+                        mr: 1
+                      }}
+                    />
+                    <Typography variant="body2">Less than 40 hours per week</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="contract">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Chip
+                      label="Contract"
+                      size="small"
+                      sx={{
+                        bgcolor: '#fff8e1',
+                        color: '#f57c00',
+                        fontWeight: 600,
+                        mr: 1
+                      }}
+                    />
+                    <Typography variant="body2">Fixed-term employment</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="internship">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Chip
+                      label="Internship"
+                      size="small"
+                      sx={{
+                        bgcolor: '#f3e5f5',
+                        color: '#7b1fa2',
+                        fontWeight: 600,
+                        mr: 1
+                      }}
+                    />
+                    <Typography variant="body2">Training position</Typography>
+                  </Box>
+                </MenuItem>
               </TextField>
             </Grid>
 
             {/* Business Category */}
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <TextField
                 required
                 fullWidth
@@ -161,17 +302,44 @@ function JobPost() {
                 onChange={handleChange}
                 error={!!formErrors.category}
                 helperText={formErrors.category}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CategoryIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               >
                 <MenuItem value="">Select a business category</MenuItem>
                 <MenuItem value="business">Business</MenuItem>
                 <MenuItem value="technology">Technology</MenuItem>
+                <MenuItem value="marketing">Marketing</MenuItem>
+                <MenuItem value="design">Design</MenuItem>
+                <MenuItem value="sales">Sales</MenuItem>
+                <MenuItem value="customer service">Customer Service</MenuItem>
+                <MenuItem value="finance">Finance</MenuItem>
                 <MenuItem value="healthcare">Healthcare</MenuItem>
                 <MenuItem value="education">Education</MenuItem>
+                <MenuItem value="engineering">Engineering</MenuItem>
+                <MenuItem value="human resources">Human Resources</MenuItem>
                 <MenuItem value="retail">Retail</MenuItem>
-                <MenuItem value="finance">Finance</MenuItem>
                 <MenuItem value="manufacturing">Manufacturing</MenuItem>
-                <MenuItem value="other">Other</MenuItem>
               </TextField>
+            </Grid>
+
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600} color="primary" gutterBottom>
+                Job Details
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
             </Grid>
 
             {/* Job Title */}
@@ -185,6 +353,22 @@ function JobPost() {
                 onChange={handleChange}
                 error={!!formErrors.title}
                 helperText={formErrors.title}
+                placeholder="e.g. Senior Software Engineer"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <WorkIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               />
             </Grid>
 
@@ -199,11 +383,27 @@ function JobPost() {
                 onChange={handleChange}
                 error={!!formErrors.company}
                 helperText={formErrors.company}
+                placeholder="e.g. Acme Corporation"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BusinessIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               />
             </Grid>
 
             {/* Location */}
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} md={6}>
               <TextField
                 required
                 fullWidth
@@ -213,11 +413,27 @@ function JobPost() {
                 onChange={handleChange}
                 error={!!formErrors.location}
                 helperText={formErrors.location}
+                placeholder="e.g. New York, NY or Remote"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocationOnIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               />
             </Grid>
 
             {/* Salary */}
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} md={6}>
               <TextField
                 required
                 fullWidth
@@ -226,9 +442,31 @@ function JobPost() {
                 value={formData.salary}
                 onChange={handleChange}
                 error={!!formErrors.salary}
-                helperText={formErrors.salary}
-                placeholder="e.g. 50k-80k or $50000-$80000"
+                helperText={formErrors.salary || "e.g. 50k-80k or $50,000-$80,000 (per month)"}
+                placeholder="e.g. 50k-80k or $50,000-$80,000 (per month)"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <AttachMoneyIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               />
+            </Grid>
+
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600} color="primary" gutterBottom>
+                Job Description
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
             </Grid>
 
             {/* Job Description */}
@@ -237,32 +475,88 @@ function JobPost() {
                 required
                 fullWidth
                 multiline
-                rows={4}
+                rows={6}
                 label="Job Description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 error={!!formErrors.description}
-                helperText={formErrors.description}
+                helperText={formErrors.description || "Minimum 50 characters. Include responsibilities, requirements, and benefits."}
+                placeholder="Describe the job responsibilities, requirements, qualifications, and benefits..."
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 2 }}>
+                      <DescriptionIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
               />
             </Grid>
 
-            {/* Submit Button */}
-            <Grid item xs={12}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                fullWidth
-                disabled={!isFormValid}
-              >
-                Post Job
-              </Button>
+            <Grid item xs={12} sx={{ mt: 3 }}>
+              <Divider sx={{ mb: 4 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="large"
+                  onClick={() => navigate('/jobs')}
+                  sx={{
+                    borderRadius: 2,
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 600,
+                    borderWidth: 2,
+                    '&:hover': {
+                      borderWidth: 2,
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  disabled={!isFormValid}
+                  sx={{
+                    borderRadius: 2,
+                    px: 6,
+                    py: 1.5,
+                    fontWeight: 600,
+                    boxShadow: '0 4px 14px rgba(0, 118, 255, 0.39)',
+                    '&:hover': {
+                      boxShadow: '0 6px 20px rgba(0, 118, 255, 0.45)',
+                      transform: 'translateY(-2px)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                >
+                  Post Job
+                </Button>
+              </Box>
             </Grid>
           </Grid>
         </form>
-      </Box>
+        </Box>
+      </Paper>
+
+      <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: '#f9fafb' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="body2" color="text.secondary" align="center">
+            By posting a job, you agree to our terms and conditions. All job postings will be reviewed for quality and relevance.
+          </Typography>
+        </CardContent>
+      </Card>
     </Container>
   );
 }

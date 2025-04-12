@@ -71,8 +71,10 @@ const JobApplicationForm = ({ open, onClose, onSubmit, isSubmitting, initialData
 
     if (!formData.experience.trim()) errors.experience = 'Experience is required';
 
-    // Validate resume link if provided
-    if (formData.resumeLink && !isValidURL(formData.resumeLink)) {
+    // Validate resume link - now required
+    if (!formData.resumeLink || !formData.resumeLink.trim()) {
+      errors.resumeLink = 'Resume link is required';
+    } else if (!isValidURL(formData.resumeLink)) {
       errors.resumeLink = 'Please enter a valid URL';
     }
 
@@ -105,8 +107,11 @@ const JobApplicationForm = ({ open, onClose, onSubmit, isSubmitting, initialData
         experience: formData.experience,
         coverLetter: formData.coverLetter || '',
         resumeLink: formData.resumeLink || '',
-        jobTitle: initialData?.jobTitle || 'your job posting'
+        jobTitle: initialData?.jobTitle || 'Untitled Job'
       };
+
+      // Log the job title for debugging
+      console.log("Job application for:", submissionData.jobTitle);
 
       // Submit application with complete information
       await onSubmit(submissionData);
@@ -168,6 +173,7 @@ const JobApplicationForm = ({ open, onClose, onSubmit, isSubmitting, initialData
 
           <TextField
             fullWidth
+            required
             label="Resume Link (Google Drive, Dropbox, etc.)"
             name="resumeLink"
             value={formData.resumeLink || ''}

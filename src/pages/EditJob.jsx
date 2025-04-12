@@ -39,7 +39,7 @@ function EditJob() {
 
         if (jobDoc.exists()) {
           const jobData = jobDoc.data();
-          if (auth.currentUser?.uid !== jobData.userId) {
+          if (auth.currentUser?.uid !== jobData.userId && auth.currentUser?.email !== jobData.userEmail) {
             setError('You are not authorized to edit this job');
             return;
           }
@@ -74,7 +74,7 @@ function EditJob() {
         if (value.length < 2 || value.length > 50) error = 'Location must be between 2 and 50 characters';
         break;
       case 'salary':
-        if (!/^(\$?\d+(k)?(-\$?\d+(k)?)?)$/.test(value)) error = 'Enter a valid salary range (e.g. 50k-80k or $50000-$80000)';
+        if (!/^(\$?\d+(k)?(-\$?\d+(k)?)?)$/.test(value)) error = 'Enter a valid salary range (e.g. 50k-80k or $50000-$80000) - per month';
         break;
       case 'description':
         if (value.length < 50 || value.length > 5000) error = 'Description must be between 50 and 5000 characters';
@@ -170,7 +170,7 @@ function EditJob() {
                   helperText={formErrors[field]}
                   multiline={field === 'description'}
                   rows={field === 'description' ? 4 : 1}
-                  placeholder={field === 'salary' ? 'e.g. 50k-80k or $50000-$80000' : ''}
+                  placeholder={field === 'salary' ? 'e.g. 50k-80k or $50000-$80000 (per month)' : ''}
                 />
               </Grid>
             ))}
