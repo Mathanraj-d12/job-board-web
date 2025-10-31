@@ -489,29 +489,7 @@ function SignUp() {
               </Typography>
             </Divider>
 
-            <Button
-              fullWidth
-              variant="outlined"
-              color="primary"
-              size="large"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              sx={{
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 600,
-                borderWidth: 1,
-                display: 'flex',
-                gap: 2,
-                alignItems: 'center',
-                justifyContent: 'center',
-                '&:hover': {
-                  borderWidth: 1,
-                  bgcolor: 'rgba(37, 99, 235, 0.04)',
-                  transform: 'translateY(-2px)'
-                }
-              }}
-            >
+            
               <img src={googleLogo} alt="Google" style={{ width: 20, height: 20 }} />
               {loading ? <CircularProgress size={24} /> : "Continue with Google"}
             </Button>
