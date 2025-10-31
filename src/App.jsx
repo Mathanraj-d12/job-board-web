@@ -292,6 +292,7 @@
 // export default App;
 
 // src/App.jsx
+// Vercel routing fix applied — vercel.json added
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth, handleGoogleRedirectResult } from './firebase';
