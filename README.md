@@ -5,7 +5,7 @@ A fully functional **Job Board Web App** that allows users to post, search, and 
 ---
 
 ## 🌐 Live Demo
-👉 **[Click here to view the live project](https://job-board-web.vercel.app/)**
+👉 **[Click here to view the live project](https://job-board-web-fawn.vercel.app)**
 
 ---
 
