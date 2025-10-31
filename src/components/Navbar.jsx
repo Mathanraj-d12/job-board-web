@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AppBar, Toolbar, Typography, Button, IconButton,
@@ -17,22 +17,16 @@ const Navbar = ({ user, setUser }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setElevated(window.scrollY > 0);
-    };
+    const handleScroll = () => setElevated(window.scrollY > 0);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const handleMenu = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleSignOut = () => {
+  const handleSignOut = (e) => {
+    e.stopPropagation(); // Stop menu close
     localStorage.removeItem("user");
     setUser(null);
     handleClose();
@@ -73,8 +67,20 @@ const Navbar = ({ user, setUser }) => {
               <MenuItem component={Link} to="/job-post" onClick={handleClose} sx={{ py: 1.5, color: '#10B981' }}>
                 Post a Job
               </MenuItem>
-              <MenuItem onClick={handleSignOut} sx={{ py: 1.5, color: '#ef4444' }}>
-                Sign Out
+              {/* FIXED: Use Button inside MenuItem */}
+              <MenuItem onClick={(e) => e.stopPropagation()}>
+                <Button
+                  fullWidth
+                  onClick={handleSignOut}
+                  sx={{
+                    py: 1.5,
+                    color: '#ef4444',
+                    fontWeight: 500,
+                    justifyContent: 'flex-start'
+                  }}
+                >
+                  Sign Out
+                </Button>
               </MenuItem>
             </>
           ) : (
