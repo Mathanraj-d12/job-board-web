@@ -381,3 +381,5 @@ function App() {
 }
 
 export default App;
+
+// Fresh deploy with vercel.json routing fix
