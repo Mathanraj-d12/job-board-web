@@ -257,8 +257,8 @@ function JobList() {
           onChange={(_, v) => { 
             setActiveTab(v); 
             setCurrentPage(1);
-            const params = new URLSearchParams(location.search);
-            params.set('tab', v);
+            const params = new URLSearchParams();
+            params.set('tab', v.toString());
             // Preserve existing filter parameters
             if (searchTerm) params.set('search', searchTerm);
             if (categoryFilter) params.set('category', categoryFilter);
@@ -266,7 +266,8 @@ function JobList() {
             if (locationFilter !== 'all') params.set('location', locationFilter);
             if (salaryFilter !== 'all') params.set('salary', salaryFilter);
             if (sortBy !== 'newest') params.set('sort', sortBy);
-            navigate(`/jobs?${params.toString()}`);
+            const newUrl = `/jobs?${params.toString()}`;
+            navigate(newUrl, { replace: true });
           }}
           variant="scrollable"
           scrollButtons="auto"
