@@ -127,7 +127,7 @@ function JobList() {
 
   // Fetch jobs and applications
   useEffect(() => {
-    const fetchJobsAndApplications = async () => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setLoading(true);
       try {
         const jobsSnapshot = await getDocs(collection(db, 'jobs'));
@@ -138,10 +138,10 @@ function JobList() {
         }));
         setJobs(jobsData);
 
-        if (auth.currentUser) {
+        if (user) {
           // Get all applications for the current user
           const applicationsSnapshot = await getDocs(
-            query(collection(db, 'applications'), where('userId', '==', auth.currentUser.uid))
+            query(collection(db, 'applications'), where('userId', '==', user.uid))
           );
           const applicationsData = applicationsSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -150,8 +150,14 @@ function JobList() {
           }));
           setApplications(applicationsData);
 
-          // Initialize with empty saved jobs array instead of auto-populating
-          // This prevents the "Saved Jobs" tab from showing content automatically
+          // Get saved jobs for the current user
+          const savedJobsSnapshot = await getDocs(
+            query(collection(db, 'savedJobs'), where('userId', '==', user.uid))
+          );
+          const savedJobsData = savedJobsSnapshot.docs.map(doc => doc.data().jobId);
+          setSavedJobs(savedJobsData);
+        } else {
+          setApplications([]);
           setSavedJobs([]);
         }
       } catch (error) {
@@ -160,9 +166,9 @@ function JobList() {
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    fetchJobsAndApplications();
+    return () => unsubscribe();
   }, []);
 
   // Handle application cancellation
