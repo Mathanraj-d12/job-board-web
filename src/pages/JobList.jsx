@@ -259,6 +259,13 @@ function JobList() {
             setCurrentPage(1);
             const params = new URLSearchParams(location.search);
             params.set('tab', v);
+            // Preserve existing filter parameters
+            if (searchTerm) params.set('search', searchTerm);
+            if (categoryFilter) params.set('category', categoryFilter);
+            if (jobTypeFilter !== 'all') params.set('jobType', jobTypeFilter);
+            if (locationFilter !== 'all') params.set('location', locationFilter);
+            if (salaryFilter !== 'all') params.set('salary', salaryFilter);
+            if (sortBy !== 'newest') params.set('sort', sortBy);
             navigate(`/jobs?${params.toString()}`);
           }}
           variant="scrollable"
