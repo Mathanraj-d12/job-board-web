@@ -1259,54 +1259,26 @@
 
 // export default JobList;
 
-
 import { useState, useEffect } from 'react';
 import { collection, getDocs, deleteDoc, doc, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Chip,
-  InputAdornment,
-  Divider,
-  Avatar,
-  Paper,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  IconButton,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
-  Stack,
-  Skeleton,
-  Badge,
-  Menu,
-  Tabs,
-  Tab,
-  Pagination
+  Box, Container, Typography, Grid, Card, CardContent, TextField, Button, Chip,
+  InputAdornment, Divider, Avatar, Paper, MenuItem, Select, FormControl, InputLabel,
+  IconButton, Tooltip, useTheme, useMediaQuery, Stack, Skeleton, Menu, Tabs, Tab,
+  Pagination, Drawer, AppBar, Toolbar, CssBaseline
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import WorkIcon from '@mui/icons-material/Work';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import CategoryIcon from '@mui/icons-material/Category';
-import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import TuneIcon from '@mui/icons-material/Tune';
 import CloseIcon from '@mui/icons-material/Close';
-import SortIcon from '@mui/icons-material/Sort';
+import MenuIcon from '@mui/icons-material/Menu';
 import { categoryDefinitions } from './Categories';
 
 function JobList() {
@@ -1314,55 +1286,49 @@ function JobList() {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isMedium = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Auth User State
+  // Auth & Data
   const [user, setUser] = useState(null);
-
-  // Data States
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // UI States
+  // UI
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [jobsPerPage] = useState(9);
+  const jobsPerPage = 6; // Mobile: fewer cards
 
-  // Filter States
-  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
-  const [sortAnchorEl, setSortAnchorEl] = useState(null);
+  // Filters
+  const [filterOpen, setFilterOpen] = useState(false);
   const [jobTypeFilter, setJobTypeFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [salaryFilter, setSalaryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  // Sync URL Params
+  // URL Sync
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    setCategoryFilter(params.get('category') || '');
     setSearchTerm(params.get('search') || '');
+    setCategoryFilter(params.get('category') || '');
     setJobTypeFilter(params.get('jobType') || 'all');
     setLocationFilter(params.get('location') || 'all');
     setSalaryFilter(params.get('salary') || 'all');
     setSortBy(params.get('sort') || 'newest');
-    const tab = parseInt(params.get('tab'));
-    setActiveTab(isNaN(tab) ? 0 : tab);
+    setActiveTab(parseInt(params.get('tab') || '0'));
   }, [location.search]);
 
-  // Auth & Data Fetch
+  // Fetch Data
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
       setLoading(true);
       try {
-        const jobsSnapshot = await getDocs(collection(db, 'jobs'));
-        const jobsData = jobsSnapshot.docs.map(doc => ({
+        const jobsSnap = await getDocs(collection(db, 'jobs'));
+        const jobsData = jobsSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
@@ -1371,77 +1337,37 @@ function JobList() {
         setJobs(jobsData);
 
         if (currentUser) {
-          const appsQuery = query(collection(db, 'applications'), where('userId', '==', currentUser.uid));
-          const appsSnapshot = await getDocs(appsQuery);
-          setApplications(appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          const appsSnap = await getDocs(query(collection(db, 'applications'), where('userId', '==', currentUser.uid)));
+          setApplications(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-          const savedQuery = query(collection(db, 'savedJobs'), where('userId', '==', currentUser.uid));
-          const savedSnapshot = await getDocs(savedQuery);
-          setSavedJobs(savedSnapshot.docs.map(doc => doc.data().jobId));
-        } else {
-          setApplications([]);
-          setSavedJobs([]);
+          const savedSnap = await getDocs(query(collection(db, 'savedJobs'), where('userId', '==', currentUser.uid)));
+          setSavedJobs(savedSnap.docs.map(d => d.data().jobId));
         }
       } catch (err) {
-        console.error(err);
-        setError('Failed to load jobs');
+        setError('Failed to load');
       } finally {
         setLoading(false);
       }
     });
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  // Toggle Save Job
+  // Save Job
   const toggleSaveJob = async (jobId) => {
-    if (!user) {
-      navigate('/signin');
-      return;
-    }
+    if (!user) return navigate('/signin');
     try {
       if (savedJobs.includes(jobId)) {
         const q = query(collection(db, 'savedJobs'), where('userId', '==', user.uid), where('jobId', '==', jobId));
-        const snapshot = await getDocs(q);
-        snapshot.forEach(d => deleteDoc(d.ref));
+        const snap = await getDocs(q);
+        snap.forEach(d => deleteDoc(d.ref));
         setSavedJobs(prev => prev.filter(id => id !== jobId));
       } else {
-        await addDoc(collection(db, 'savedJobs'), {
-          userId: user.uid,
-          jobId,
-          savedAt: serverTimestamp()
-        });
+        await addDoc(collection(db, 'savedJobs'), { userId: user.uid, jobId, savedAt: serverTimestamp() });
         setSavedJobs(prev => [...prev, jobId]);
       }
     } catch (err) {
-      setError('Failed to save job');
+      setError('Save failed');
     }
-  };
-
-  // Cancel Application
-  const handleCancelApplication = async (appId) => {
-    if (!window.confirm('Withdraw application?')) return;
-    try {
-      await deleteDoc(doc(db, 'applications', appId));
-      setApplications(prev => prev.filter(a => a.id !== appId));
-    } catch (err) {
-      setError('Failed to withdraw');
-    }
-  };
-
-  // Delete Job
-  const handleDelete = async (jobId) => {
-    if (!window.confirm('Delete this job?')) return;
-    try {
-      await deleteDoc(doc(db, 'jobs', jobId));
-      setJobs(prev => prev.filter(j => j.id !== jobId));
-    } catch (err) {
-      setError('Failed to delete');
-    }
-  };
-
-  // Edit Job
-  const handleEdit = (jobId) => {
-    navigate(`/edit-job/${jobId}`);
   };
 
   // Apply Filters
@@ -1455,6 +1381,7 @@ function JobList() {
     if (sortBy !== 'newest') params.set('sort', sortBy);
     params.set('tab', activeTab);
     navigate(`/jobs?${params.toString()}`);
+    setFilterOpen(false);
   };
 
   const resetFilters = () => {
@@ -1465,21 +1392,21 @@ function JobList() {
     setSalaryFilter('all');
     setSortBy('newest');
     navigate('/jobs?tab=0');
+    setFilterOpen(false);
   };
 
-  // Unique Filters
+  // Filter Data
   const uniqueLocations = [...new Set(jobs.map(j => j.location || 'Remote'))];
   const uniqueJobTypes = [...new Set(jobs.map(j => j.jobType))];
 
-  // Filtered & Sorted Jobs
   const filteredJobs = jobs
     .filter(job => {
-      const matchesSearch = !searchTerm || 
-        [job.title, job.company, job.description].some(f => f?.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesCategory = !categoryFilter || job.category?.toLowerCase() === categoryFilter.toLowerCase();
+      const match = (str) => str?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = !searchTerm || match(job.title) || match(job.company) || match(job.description);
+      const matchesCat = !categoryFilter || job.category?.toLowerCase() === categoryFilter.toLowerCase();
       const matchesType = jobTypeFilter === 'all' || job.jobType === jobTypeFilter;
-      const matchesLocation = locationFilter === 'all' || job.location === locationFilter || (locationFilter === 'Remote' && !job.location);
-      const matchesSalary = salaryFilter === 'all' || 
+      const matchesLoc = locationFilter === 'all' || job.location === locationFilter;
+      const matchesSal = salaryFilter === 'all' ||
         (salaryFilter === 'high' && job.salary >= 5000) ||
         (salaryFilter === 'medium' && job.salary >= 3000 && job.salary < 5000) ||
         (salaryFilter === 'low' && job.salary < 3000);
@@ -1487,14 +1414,12 @@ function JobList() {
       if (activeTab === 1) return applications.some(a => a.jobId === job.id);
       if (activeTab === 2) return savedJobs.includes(job.id);
 
-      return matchesSearch && matchesCategory && matchesType && matchesLocation && matchesSalary;
+      return matchesSearch && matchesCat && matchesType && matchesLoc && matchesSal;
     })
     .sort((a, b) => {
       switch (sortBy) {
         case 'newest': return b.createdAt - a.createdAt;
-        case 'oldest': return a.createdAt - b.createdAt;
         case 'salary-high': return b.salary - a.salary;
-        case 'salary-low': return a.salary - b.salary;
         case 'alphabetical': return a.title.localeCompare(b.title);
         default: return 0;
       }
@@ -1503,200 +1428,188 @@ function JobList() {
   const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
   const currentJobs = filteredJobs.slice((currentPage - 1) * jobsPerPage, currentPage * jobsPerPage);
 
-  // Skeleton
-  const JobCardSkeleton = () => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Skeleton variant="text" width="70%" height={32} />
-        <Skeleton variant="text" width="40%" height={24} sx={{ mt: 1 }} />
-        <Skeleton variant="text" width="60%" height={24} sx={{ mt: 1 }} />
-        <Box sx={{ mt: 2 }}><Skeleton variant="rectangular" height={60} /></Box>
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-          <Skeleton variant="rounded" width={80} height={32} />
-          <Skeleton variant="rounded" width={80} height={32} />
-        </Stack>
-      </CardContent>
-    </Card>
+  // Mobile Drawer
+  const FilterDrawer = () => (
+    <Drawer anchor="bottom" open={filterOpen} onClose={() => setFilterOpen(false)}>
+      <Box sx={{ p: 3, pb: 5, maxHeight: '80vh', overflowY: 'auto' }}>
+        <Typography variant="h6" gutterBottom>Filters</Typography>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Job Type</InputLabel>
+          <Select value={jobTypeFilter} onChange={(e) => setJobTypeFilter(e.target.value)}>
+            <MenuItem value="all">All</MenuItem>
+            {uniqueJobTypes.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Location</InputLabel>
+          <Select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)}>
+            <MenuItem value="all">All</MenuItem>
+            {uniqueLocations.map(l => <MenuItem key={l} value={l}>{l}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel>Salary</InputLabel>
+          <Select value={salaryFilter} onChange={(e) => setSalaryFilter(e.target.value)}>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="high">₹5000+</MenuItem>
+            <MenuItem value="medium">₹3000-5000</MenuItem>
+            <MenuItem value="low">Below ₹3000</MenuItem>
+          </Select>
+        </FormControl>
+        <Button variant="contained" fullWidth onClick={applyFilters} sx={{ mb: 1 }}>
+          Apply Filters
+        </Button>
+        <Button variant="outlined" fullWidth onClick={resetFilters}>
+          Reset
+        </Button>
+      </Box>
+    </Drawer>
   );
 
+  if (!user && !loading) {
+    return (
+      <Container sx={{ textAlign: 'center', py: 10 }}>
+        <BusinessCenterIcon sx={{ fontSize: 80, color: 'primary.main' }} />
+        <Typography variant="h5" gutterBottom>Sign In Required</Typography>
+        <Button variant="contained" size="large" onClick={() => navigate('/signin')}>
+          Sign In
+        </Button>
+      </Container>
+    );
+  }
+
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
-      {!user ? (
-        <Paper elevation={3} sx={{ textAlign: 'center', py: 8, borderRadius: 3, bgcolor: '#f0f9ff' }}>
-          <BusinessCenterIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h4" gutterBottom>Please sign in</Typography>
-          <Typography color="text.secondary" paragraph>
-            Sign in to browse and apply for jobs.
-          </Typography>
-          <Button variant="contained" size="large" onClick={() => navigate('/signin')}>
-            Sign In
-          </Button>
+    <>
+      <CssBaseline />
+      <AppBar position="sticky" color="primary" sx={{ display: isMobile ? 'flex' : 'none' }}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>JobHunt</Typography>
+          <IconButton color="inherit" onClick={() => setFilterOpen(true)}>
+            <FilterListIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+
+      <Container sx={{ pt: isMobile ? 2 : 4, pb: 10 }}>
+        {/* Search */}
+        <Paper sx={{ p: 2, mb: 3, borderRadius: 3 }}>
+          <TextField
+            fullWidth
+            placeholder="Search jobs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => { setSearchTerm(''); applyFilters(); }}>
+                    <CloseIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
         </Paper>
-      ) : (
-        <>
-          {/* Header */}
-          <Box sx={{ mb: 6, background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)', borderRadius: 3, p: { xs: 3, md: 5 }, color: 'white' }}>
-            <Typography variant="h3" fontWeight={800} gutterBottom>
-              Discover Your Next Opportunity
-            </Typography>
-            <Typography variant="h6" sx={{ mb: 3, opacity: 0.9 }}>
-              {loading ? 'Loading...' : `${filteredJobs.length} jobs available`}
-            </Typography>
 
-            <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  fullWidth
-                  placeholder="Search by title, company, keywords..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
-                  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
-                />
-                <Button variant="contained" onClick={applyFilters}>Search</Button>
-                <Button variant="outlined" startIcon={<FilterListIcon />} onClick={(e) => setFilterAnchorEl(e.currentTarget)}>
-                  Filters
-                </Button>
-              </Box>
+        {/* Tabs */}
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => { setActiveTab(v); setCurrentPage(1); }}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ mb: 2 }}
+        >
+          <Tab label={`All (${jobs.length})`} />
+          <Tab label={`Applied (${applications.length})`} />
+          <Tab label={`Saved (${savedJobs.length})`} />
+        </Tabs>
 
-              {(categoryFilter || jobTypeFilter !== 'all' || locationFilter !== 'all' || salaryFilter !== 'all') && (
-                <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {categoryFilter && <Chip label={`Category: ${categoryFilter}`} onDelete={() => { setCategoryFilter(''); applyFilters(); }} />}
-                  {jobTypeFilter !== 'all' && <Chip label={`Type: ${jobTypeFilter}`} onDelete={() => { setJobTypeFilter('all'); applyFilters(); }} />}
-                  {locationFilter !== 'all' && <Chip label={`Location: ${locationFilter}`} onDelete={() => { setLocationFilter('all'); applyFilters(); }} />}
-                  {salaryFilter !== 'all' && <Chip label={`Salary: ${salaryFilter}`} onDelete={() => { setSalaryFilter('all'); applyFilters(); }} />}
-                  <Button size="small" onClick={resetFilters} startIcon={<CloseIcon />}>Clear</Button>
-                </Box>
-              )}
-            </Paper>
-          </Box>
-
-          {/* Filter Menu */}
-          <Menu anchorEl={filterAnchorEl} open={Boolean(filterAnchorEl)} onClose={() => setFilterAnchorEl(null)}>
-            <Box sx={{ p: 2, width: 300 }}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>Filters</Typography>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Job Type</InputLabel>
-                <Select value={jobTypeFilter} onChange={(e) => setJobTypeFilter(e.target.value)} label="Job Type">
-                  <MenuItem value="all">All</MenuItem>
-                  {uniqueJobTypes.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Location</InputLabel>
-                <Select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} label="Location">
-                  <MenuItem value="all">All</MenuItem>
-                  {uniqueLocations.map(l => <MenuItem key={l} value={l}>{l}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Salary</InputLabel>
-                <Select value={salaryFilter} onChange={(e) => setSalaryFilter(e.target.value)} label="Salary">
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="high">High (5000+)</MenuItem>
-                  <MenuItem value="medium">Medium (3000-5000)</MenuItem>
-                  <MenuItem value="low">Low (&lt;3000)</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel>Sort By</InputLabel>
-                <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} label="Sort By">
-                  <MenuItem value="newest">Newest</MenuItem>
-                  <MenuItem value="oldest">Oldest</MenuItem>
-                  <MenuItem value="salary-high">Salary High</MenuItem>
-                  <MenuItem value="salary-low">Salary Low</MenuItem>
-                  <MenuItem value="alphabetical">A-Z</MenuItem>
-                </Select>
-              </FormControl>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="outlined" onClick={resetFilters}>Reset</Button>
-                <Button variant="contained" onClick={applyFilters}>Apply</Button>
-              </Box>
-            </Box>
-          </Menu>
-
-          {/* Tabs */}
-          <Tabs value={activeTab} onChange={(_, v) => { setActiveTab(v); setCurrentPage(1); applyFilters(); }} sx={{ mb: 3 }}>
-            <Tab label={`All Jobs (${jobs.length})`} />
-            <Tab label={`Applied (${applications.length})`} />
-            <Tab label={`Saved (${savedJobs.length})`} />
-          </Tabs>
-
-          {/* Jobs Grid */}
-          {loading ? (
-            <Grid container spacing={3}>
-              {[...Array(6)].map((_, i) => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
-                  <JobCardSkeleton />
+        {/* Jobs */}
+        {loading ? (
+          <Grid container spacing={2}>
+            {[...Array(6)].map((_, i) => (
+              <Grid item xs={12} key={i}>
+                <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+              </Grid>
+            ))}
+          </Grid>
+        ) : currentJobs.length === 0 ? (
+          <Typography textAlign="center" color="text.secondary" variant="h6" sx={{ py: 5 }}>
+            No jobs found. Try different filters!
+          </Typography>
+        ) : (
+          <>
+            <Grid container spacing={2}>
+              {currentJobs.map(job => (
+                <Grid item xs={12} key={job.id}>
+                  <Card sx={{ position: 'relative' }}>
+                    <IconButton sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }} onClick={() => toggleSaveJob(job.id)}>
+                      {savedJobs.includes(job.id) ? <BookmarkIcon color="primary" /> : <BookmarkBorderIcon />}
+                    </IconButton>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Avatar sx={{ mr: 2 }}>{job.company?.[0]}</Avatar>
+                        <div>
+                          <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>{job.title}</Typography>
+                          <Typography variant="body2" color="text.secondary">{job.company}</Typography>
+                        </div>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        <LocationOnIcon fontSize="small" /> {job.location || 'Remote'} • ₹{job.salary || 'Negotiable'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 2, height: 60, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                        {job.description}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                        <Chip label={job.category} size="small" />
+                        <Chip label={job.jobType} size="small" />
+                      </Box>
+                      {job.userId === user?.uid ? (
+                        <Button fullWidth variant="outlined" onClick={() => navigate(`/edit-job/${job.id}`)}>
+                          Edit Job
+                        </Button>
+                      ) : applications.some(a => a.jobId === job.id) ? (
+                        <Button fullWidth variant="outlined" color="error">
+                          Applied
+                        </Button>
+                      ) : (
+                        <Button fullWidth variant="contained" onClick={() => navigate(`/apply/${job.id}`)}>
+                          Apply Now
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
                 </Grid>
               ))}
             </Grid>
-          ) : currentJobs.length === 0 ? (
-            <Typography textAlign="center" color="text.secondary" variant="h6">
-              No jobs found. Try adjusting filters.
-            </Typography>
-          ) : (
-            <>
-              <Grid container spacing={3}>
-                {currentJobs.map(job => (
-                  <Grid item xs={12} sm={6} md={4} key={job.id}>
-                    <Card sx={{ height: '100%', position: 'relative', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
-                      <IconButton sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'white' }} onClick={() => toggleSaveJob(job.id)}>
-                        {savedJobs.includes(job.id) ? <BookmarkIcon color="primary" /> : <BookmarkBorderIcon />}
-                      </IconButton>
-                      <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>{job.company?.[0]}</Avatar>
-                          <div>
-                            <Typography variant="h6">{job.title}</Typography>
-                            <Typography variant="body2" color="text.secondary">{job.company}</Typography>
-                          </div>
-                        </Box>
-                        <Typography variant="body2" paragraph sx={{ height: 60, overflow: 'hidden' }}>
-                          {job.description}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                          <Chip label={job.category} size="small" />
-                          <Chip label={job.jobType} size="small" />
-                          <Chip label={`${Math.floor((Date.now() - job.createdAt) / 86400000)}d ago`} size="small" />
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography><LocationOnIcon fontSize="small" /> {job.location || 'Remote'}</Typography>
-                          <Typography><AttachMoneyIcon fontSize="small" /> {job.salary || 'Competitive'}</Typography>
-                        </Box>
-                        {job.userId === user?.uid ? (
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button size="small" variant="outlined" onClick={() => handleEdit(job.id)}>Edit</Button>
-                            <Button size="small" color="error" onClick={() => handleDelete(job.id)}>Delete</Button>
-                          </Box>
-                        ) : applications.some(a => a.jobId === job.id) ? (
-                          <Button variant="outlined" color="error" fullWidth size="small" onClick={() => handleCancelApplication(applications.find(a => a.jobId === job.id).id)}>
-                            Withdraw
-                          </Button>
-                        ) : (
-                          <Button variant="contained" fullWidth onClick={() => navigate(`/apply/${job.id}`)}>
-                            Apply Now
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
 
-              {totalPages > 1 && (
-                <Pagination
-                  count={totalPages}
-                  page={currentPage}
-                  onChange={(_, p) => setCurrentPage(p)}
-                  sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}
-                />
-              )}
-            </>
-          )}
-        </>
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={(_, p) => setCurrentPage(p)}
+              sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}
+              size={isMobile ? "small" : "medium"}
+            />
+          </>
+        )}
+      </Container>
+
+      {/* Filter Drawer */}
+      <FilterDrawer />
+
+      {/* Desktop Filters */}
+      {!isMobile && (
+        <Button
+          variant="outlined"
+          startIcon={<FilterListIcon />}
+          onClick={() => setFilterOpen(true)}
+          sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}
+        >
+          Filters
+        </Button>
       )}
-    </Container>
+    </>
   );
 }
 
