@@ -521,7 +521,9 @@ function App() {
               path="/forgot-password"
               element={!user ? <ForgotPassword /> : <Navigate to="/" />}
             />
-            <Route path="/jobs" element={<JobList />} />
+           <Route path="/jobs" element={<JobList user={user} />} />
+
+
             <Route path="/edit-job/:jobId" element={<EditJob />} />
             <Route
               path="/job-post"
@@ -534,7 +536,11 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/apply/:jobId" element={<Apply />} />
             <Route path="/apply/application/:applicationId" element={<Apply />} />
-            <Route path="/personality-quiz" element={<PersonalityQuiz />} />
+            <Route
+  path="/personality-quiz"
+  element={user ? <PersonalityQuiz /> : <Navigate to="/signin" />}
+/>
+
             <Route path="/categories" element={<Categories />} />
           </Routes>
         </Container>
