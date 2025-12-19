@@ -1,0 +1,7 @@
+# Ignore everything that shouldn't be deployed
+node_modules/
+dist/
+.vscode/
+.git/
+*.log
+*.env
