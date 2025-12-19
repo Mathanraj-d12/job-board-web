@@ -70,6 +70,14 @@ node_modules/
 .vercel
 
 
-node_modules/
+# Vercel / Build
+.vercel
 dist/
+
+# Dependencies
+node_modules/
+
+# Env
 .env
+.env.*
+
